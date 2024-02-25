@@ -18,17 +18,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "02b4ff8b16e6076c3e14220b39fbc1fabb6737522281a388998046859400895f"
 
 [[package]]
-name = "lalr"
-version = "0.0.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "106d7548f95adbe3019b4fc4954554d7b72535867aa9ce326d2f766b68958de7"
-
-[[package]]
-name = "pair"
+name = "chirp"
 version = "0.1.0"
 dependencies = [
  "plex",
 ]
+
+[[package]]
+name = "lalr"
+version = "0.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "106d7548f95adbe3019b4fc4954554d7b72535867aa9ce326d2f766b68958de7"
 
 [[package]]
 name = "plex"

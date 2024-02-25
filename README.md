@@ -1,3 +1,3 @@
-## pretty awesome intermediate representation
-ir for chip8  
-used for cr8
+## chirp: chip-8 intermediate representation
+written in rust using plex  
+used by cr8
