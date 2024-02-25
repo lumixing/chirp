@@ -7,6 +7,7 @@ pub enum Token {
     Comment,
     Comma,
     Colon,
+    Dollar,
 
     Nop,
     Cls,
@@ -53,6 +54,7 @@ lexer! {
     r#"#[^\n]*"# => Token::Comment,
     r#","# => Token::Comma,
     r#":"# => Token::Colon,
+    r#"$"# => Token::Dollar,
 
     r#"nop"#  => Token::Nop,
     r#"cls"#  => Token::Cls,

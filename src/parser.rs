@@ -7,6 +7,7 @@ use crate::lexer::{
 
 #[derive(Debug)]
 pub enum Stmt_ {
+    DeclareSprite(String, Vec<u8>),
     DeclareLabel(String),
     Nop,
     Clear,
@@ -24,13 +25,14 @@ pub enum Stmt_ {
     Or(u8, u8),
     And(u8, u8),
     Xor(u8, u8),
-    AddRegister(u8, u8),
+    AddRegisterRegister(u8, u8),
     Subtract(u8, u8),
     ShiftRight(u8),
     SubtractReverse(u8, u8),
     ShiftLeft(u8),
     SkipNotEqualsRegister(u8, u8),
-    MoveIRegister(u16),
+    MoveIRegisterInteger(u16),
+    MoveIRegisterSprite(String),
     JumpRegister(u16),
     Random(u8, u8),
     Draw(u8, u8, u8),
@@ -82,7 +84,19 @@ parser! {
         statements[s] Newline => s
     }
 
+    hex: Vec<u8> {
+        => vec![],
+        hex[mut d] Int8(int) => {
+            d.push(int);
+            d
+        }
+    }
+
     statement: Stmt {
+        Dollar Ident(id) hex[data] => Stmt {
+            span: span!(),
+            node: Stmt_::DeclareSprite(id, data)
+        },
         Ident(id) Colon => Stmt {
             span: span!(),
             node: Stmt_::DeclareLabel(id),
@@ -161,7 +175,7 @@ parser! {
         },
         Add Register(x) Comma Register(y) => Stmt {
             span: span!(),
-            node: Stmt_::AddRegister(x, y),
+            node: Stmt_::AddRegisterRegister(x, y),
         },
         Sub Register(x) Comma Register(y) => Stmt {
             span: span!(),
@@ -185,11 +199,15 @@ parser! {
         },
         Mov IRegister Comma Int8(nnn) => Stmt {
             span: span!(),
-            node: Stmt_::MoveIRegister(nnn as u16)
+            node: Stmt_::MoveIRegisterInteger(nnn as u16)
         },
         Mov IRegister Comma Int16(nnn) => Stmt {
             span: span!(),
-            node: Stmt_::MoveIRegister(nnn)
+            node: Stmt_::MoveIRegisterInteger(nnn)
+        },
+        Mov IRegister Comma Ident(id) => Stmt {
+            span: span!(),
+            node: Stmt_::MoveIRegisterSprite(id)
         },
         Jmpr Int8(nnn) => Stmt {
             span: span!(),

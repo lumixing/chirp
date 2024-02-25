@@ -1,8 +1,10 @@
 use std::{env, fs};
 
+use interp::interp;
 use lexer::Lexer;
 use parser::parse;
 
+mod interp;
 mod lexer;
 mod parser;
 
@@ -17,7 +19,10 @@ fn main() {
     // }
 
     let program = parse(lexer).expect("error while parsing");
-    for st in program.statements {
-        println!("{:?}", st.node);
-    }
+    // for st in program.statements {
+    // println!("{:?}", st.node);
+    // }
+
+    let ins = interp(&program);
+    println!("{:#04X?}", ins);
 }
