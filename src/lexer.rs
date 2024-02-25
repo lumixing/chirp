@@ -39,6 +39,8 @@ pub enum Token {
     Int8(u8),
     Int16(u16),
     IRegister,
+    DelayTimer,
+    SoundTimer,
 
     Ident(String),
 }
@@ -106,6 +108,8 @@ lexer! {
     },
 
     r#"i"# => Token::IRegister,
+    r#"dt"# => Token::DelayTimer,
+    r#"st"# => Token::SoundTimer,
     r#"[a-zA-Z_]+"# => Token::Ident(tok.to_string()),
 
     r#"."# => panic!("invalid character: {:?}", tok)
@@ -144,7 +148,7 @@ impl<'a> Iterator for Lexer<'a> {
                 return None;
             };
             match tok {
-                Token::Whitespace => {
+                Token::Whitespace | Token::Comment => {
                     continue;
                 }
                 tok => {
