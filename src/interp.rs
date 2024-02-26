@@ -54,11 +54,12 @@ fn interp_label<'a>(props: &mut Props<'a>, stmt: &'a Stmt) {
                 println!("WARN: label {:?} already exists, overriding", id);
             }
 
-            props.labels.insert(id, props.pc);
+            props.labels.insert(id, PROGRAM_START as u16 + props.pc - 2);
             props.pc -= 2;
             props.skips += 1;
         }
         DeclareSprite(_, _) => {
+            props.pc -= 2;
             props.skips += 1;
         }
         _ => {}
@@ -81,8 +82,130 @@ fn interp_stmt<'a>(props: &mut Props<'a>, stmt: &'a Stmt) {
             props.sprite_data.extend(data);
             props.pc -= 2;
         }
+        Nop => {
+            props.ins.extend(vec![0x00, 0x00]);
+        }
         Clear => {
             props.ins.extend(vec![0x00, 0xE0]);
+        }
+        Return => {
+            props.ins.extend(vec![0x00, 0xEE]);
+        }
+        JumpInteger(ref nnn) => {
+            let high_byte = 0x10 + ((nnn & 0xF00) >> 8);
+            let low_byte = nnn & 0x0FF;
+            props.ins.extend(vec![high_byte as u8, low_byte as u8]);
+        }
+        JumpLabel(ref id) => {
+            if !props.labels.contains_key(id.as_str()) {
+                panic!(
+                    "ERROR: could not find label {:?} at line {}",
+                    id, props.line
+                );
+            }
+
+            let pc = props.labels.get(id.as_str()).unwrap();
+            let high_byte = 0x10 + ((pc & 0xF00) >> 8);
+            let low_byte = pc & 0x0FF;
+            props.ins.extend(vec![high_byte as u8, low_byte as u8]);
+        }
+        CallInteger(ref nnn) => {
+            let high_byte = 0x20 + ((nnn & 0xF00) >> 8);
+            let low_byte = nnn & 0x0FF;
+            props.ins.extend(vec![high_byte as u8, low_byte as u8]);
+        }
+        CallLabel(ref id) => {
+            if !props.labels.contains_key(id.as_str()) {
+                panic!(
+                    "ERROR: could not find label {:?} at line {}",
+                    id, props.line
+                );
+            }
+
+            let pc = props.labels.get(id.as_str()).unwrap();
+            let high_byte = 0x20 + ((pc & 0xF00) >> 8);
+            let low_byte = pc & 0x0FF;
+            props.ins.extend(vec![high_byte as u8, low_byte as u8]);
+        }
+        SkipEqualsInteger(ref x, ref nn) => {
+            let high_byte = 0x30 + x;
+            let low_byte = *nn;
+            props.ins.extend(vec![high_byte as u8, low_byte as u8]);
+        }
+        SkipNotEqualsInteger(ref x, ref nn) => {
+            let high_byte = 0x40 + x;
+            let low_byte = *nn;
+            props.ins.extend(vec![high_byte as u8, low_byte as u8]);
+        }
+        SkipEqualsRegister(ref x, ref y) => {
+            let high_byte = 0x50 + x;
+            let low_byte = y << 4;
+            props.ins.extend(vec![high_byte as u8, low_byte as u8]);
+        }
+        MoveRegisterInteger(ref x, ref nn) => {
+            let high_byte = 0x60 + x;
+            let low_byte = *nn;
+            props.ins.extend(vec![high_byte as u8, low_byte as u8]);
+        }
+        AddRegisterInteger(ref x, ref nn) => {
+            let high_byte = 0x70 + x;
+            let low_byte = *nn;
+            props.ins.extend(vec![high_byte as u8, low_byte as u8]);
+        }
+        MoveRegisterRegister(ref x, ref y) => {
+            let high_byte = 0x80 + x;
+            let low_byte = y << 4;
+            props.ins.extend(vec![high_byte as u8, low_byte as u8]);
+        }
+        Or(ref x, ref y) => {
+            let high_byte = 0x80 + x;
+            let low_byte = (y << 4) + 1;
+            props.ins.extend(vec![high_byte as u8, low_byte as u8]);
+        }
+        And(ref x, ref y) => {
+            let high_byte = 0x80 + x;
+            let low_byte = (y << 4) + 2;
+            props.ins.extend(vec![high_byte as u8, low_byte as u8]);
+        }
+        Xor(ref x, ref y) => {
+            let high_byte = 0x80 + x;
+            let low_byte = (y << 4) + 3;
+            props.ins.extend(vec![high_byte as u8, low_byte as u8]);
+        }
+        AddRegisterRegister(ref x, ref y) => {
+            let high_byte = 0x80 + x;
+            let low_byte = (y << 4) + 4;
+            props.ins.extend(vec![high_byte as u8, low_byte as u8]);
+        }
+        Subtract(ref x, ref y) => {
+            let high_byte = 0x80 + x;
+            let low_byte = (y << 4) + 5;
+            props.ins.extend(vec![high_byte as u8, low_byte as u8]);
+        }
+        ShiftRight(ref x) => {
+            let high_byte = 0x80 + x;
+            let low_byte = 0x06;
+            props.ins.extend(vec![high_byte as u8, low_byte as u8]);
+        }
+        SubtractReverse(ref x, ref y) => {
+            let high_byte = 0x80 + x;
+            let low_byte = (y << 4) + 7;
+            props.ins.extend(vec![high_byte as u8, low_byte as u8]);
+        }
+        ShiftLeft(ref x) => {
+            let high_byte = 0x80 + x;
+            let low_byte = 0x0E;
+            props.ins.extend(vec![high_byte as u8, low_byte as u8]);
+        }
+        SkipNotEqualsRegister(ref x, ref y) => {
+            let high_byte = 0x90 + x;
+            let low_byte = y << 4;
+            props.ins.extend(vec![high_byte as u8, low_byte as u8]);
+        }
+        MoveIRegisterInteger(ref nnn) => {
+            let high_byte = 0xA0 + ((nnn & 0xF00) >> 8);
+            let low_byte = nnn & 0x0FF;
+            props.ins.extend(vec![high_byte as u8, low_byte as u8]);
         }
         MoveIRegisterSprite(ref id) => {
             if !props.sprites.contains_key(id.as_str()) {
@@ -97,6 +220,75 @@ fn interp_stmt<'a>(props: &mut Props<'a>, stmt: &'a Stmt) {
             let low_byte = pc & 0x0FF;
             props.ins.extend(vec![high_byte as u8, low_byte as u8]);
         }
-        _ => unimplemented!(),
+        JumpRegister(ref nnn) => {
+            let high_byte = 0xB0 + ((nnn & 0xF00) >> 8);
+            let low_byte = nnn & 0x0FF;
+            props.ins.extend(vec![high_byte as u8, low_byte as u8]);
+        }
+        Random(ref x, ref nn) => {
+            let high_byte = 0xC0 + x;
+            let low_byte = *nn;
+            props.ins.extend(vec![high_byte as u8, low_byte as u8]);
+        }
+        Draw(ref x, ref y, ref n) => {
+            let high_byte = 0xD0 + x;
+            let low_byte = (y << 4) + n;
+            props.ins.extend(vec![high_byte as u8, low_byte as u8]);
+        }
+        SkipKeyPressed(ref x) => {
+            let high_byte = 0xE0 + x;
+            let low_byte = 0x9E;
+            props.ins.extend(vec![high_byte as u8, low_byte as u8]);
+        }
+        SkipKeyNotPressed(ref x) => {
+            let high_byte = 0xE0 + x;
+            let low_byte = 0xA1;
+            props.ins.extend(vec![high_byte as u8, low_byte as u8]);
+        }
+        MoveRegisterDelay(ref x) => {
+            let high_byte = 0xF0 + x;
+            let low_byte = 0x07;
+            props.ins.extend(vec![high_byte as u8, low_byte as u8]);
+        }
+        WaitKeyPress(ref x) => {
+            let high_byte = 0xF0 + x;
+            let low_byte = 0x0A;
+            props.ins.extend(vec![high_byte as u8, low_byte as u8]);
+        }
+        MoveDelayRegister(ref x) => {
+            let high_byte = 0xF0 + x;
+            let low_byte = 0x15;
+            props.ins.extend(vec![high_byte as u8, low_byte as u8]);
+        }
+        MoveSoundRegister(ref x) => {
+            let high_byte = 0xF0 + x;
+            let low_byte = 0x18;
+            props.ins.extend(vec![high_byte as u8, low_byte as u8]);
+        }
+        AddIRegisterRegister(ref x) => {
+            let high_byte = 0xF0 + x;
+            let low_byte = 0x1E;
+            props.ins.extend(vec![high_byte as u8, low_byte as u8]);
+        }
+        Sprite(ref x) => {
+            let high_byte = 0xF0 + x;
+            let low_byte = 0x29;
+            props.ins.extend(vec![high_byte as u8, low_byte as u8]);
+        }
+        Bcd(ref x) => {
+            let high_byte = 0xF0 + x;
+            let low_byte = 0x33;
+            props.ins.extend(vec![high_byte as u8, low_byte as u8]);
+        }
+        Save(ref x) => {
+            let high_byte = 0xF0 + x;
+            let low_byte = 0x55;
+            props.ins.extend(vec![high_byte as u8, low_byte as u8]);
+        }
+        Load(ref x) => {
+            let high_byte = 0xF0 + x;
+            let low_byte = 0x65;
+            props.ins.extend(vec![high_byte as u8, low_byte as u8]);
+        }
     }
 }

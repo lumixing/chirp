@@ -24,5 +24,12 @@ fn main() {
     // }
 
     let ins = interp(&program);
-    println!("{:#04X?}", ins);
+    // println!("{:#04X?}", ins);
+    for (pc, i) in ins.chunks(2).enumerate() {
+        if i.len() == 1 {
+            println!("{:03X?} {:02X?}", 0x200 + (pc * 2), i[0]);
+        } else {
+            println!("{:03X?} {:02X?}{:02X?}", 0x200 + (pc * 2), i[0], i[1]);
+        }
+    }
 }
