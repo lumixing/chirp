@@ -20,7 +20,7 @@ special registers:
 
 ### labels
 labels can be accessed even before declaration
-```armasm
+```asm
 main:           ; declare label
 cls
 drw  v0,v1,5
@@ -29,7 +29,7 @@ jmp  main       ; jump to label
 
 ### sprites
 sprites **must** be declared before access
-```armasm
+```asm
 $player 0x13 0x83 0xad 0xa1 0xd3    ; declare sprite
 mov  i,player                       ; set i to sprite location
 drw  v0,v1,5                        ; draw sprite
