@@ -51,7 +51,7 @@ lexer! {
 
     r#"[ \r\t]+"# => Token::Whitespace,
     r#"\n"# => Token::Newline,
-    r#"#[^\n]*"# => Token::Comment,
+    r#";[^\n]*"# => Token::Comment,
     r#","# => Token::Comma,
     r#":"# => Token::Colon,
     r#"$"# => Token::Dollar,
@@ -102,6 +102,16 @@ lexer! {
     r#"0x[0-9a-f]+"# => {
         let int = u16::from_str_radix(tok.trim_start_matches("0x"), 16)
             .expect("could not parse hex");
+
+        match int {
+            0..=255 => Token::Int8(int as u8),
+            0..=u16::MAX => Token::Int16(int)
+        }
+    },
+
+    r#"0b[0-1]+"# => {
+        let int = u16::from_str_radix(tok.trim_start_matches("0b"), 2)
+            .expect("could not parse binary");
 
         match int {
             0..=255 => Token::Int8(int as u8),
