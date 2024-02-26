@@ -2,11 +2,16 @@
 written in rust using plex  
 used by cr8
 
+## usage
+```console
+$ cargo run --release -- /path/to/input /path/to/output.ch8
+```
+
 ## language manual
 comments are single-lined starting with `;`
 
 ### types
-integers (n, nn, nnn) can be decimal or hexadecimal  
+integers (n, nn, nnn) can be decimal or hexadecimal or binary  
 registers (vx, vy) are decimal **only** (v0 thru v15, NOT vf)  
 special registers:
 - `i`: i register
@@ -16,10 +21,10 @@ special registers:
 ### labels
 labels can be accessed even before declaration
 ```armasm
-main:           ;declare label
+main:           ; declare label
 cls
 drw  v0,v1,5
-jmp  main       ;jump to label
+jmp  main       ; jump to label
 ```
 
 ### sprites
