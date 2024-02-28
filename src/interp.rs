@@ -1,4 +1,7 @@
-use crate::parser::{Program, Stmt, Stmt_::*};
+use crate::{
+    parser::{Program, Stmt, Stmt_::*},
+    Diagnostic,
+};
 use std::collections::HashMap;
 
 struct Props<'a> {
@@ -14,7 +17,7 @@ struct Props<'a> {
 
 const PROGRAM_START: usize = 0x200;
 
-pub fn interp<'a>(p: &'a Program) -> Vec<u8> {
+pub fn interp<'a>(program: &'a Program, diagnostic: &Diagnostic) -> Vec<u8> {
     let mut props = Props {
         pc: 0,
         ins: vec![],
@@ -27,31 +30,31 @@ pub fn interp<'a>(p: &'a Program) -> Vec<u8> {
     };
 
     // first phase: labels and code size
-    for expr in &p.statements {
+    for expr in &program.statements {
         props.pc += 2;
         props.line += 1;
-        interp_label(&mut props, expr);
+        interp_label(&mut props, diagnostic, expr);
     }
 
-    props.code_size = (p.statements.len() - props.skips) * 2;
+    props.code_size = (program.statements.len() - props.skips) * 2;
     props.pc = 0;
     props.line = 0;
 
-    for expr in &p.statements {
+    for expr in &program.statements {
         props.pc += 2;
         props.line += 1;
-        interp_stmt(&mut props, expr);
+        interp_stmt(&mut props, diagnostic, expr);
     }
 
     props.ins.extend(props.sprite_data);
     props.ins
 }
 
-fn interp_label<'a>(props: &mut Props<'a>, stmt: &'a Stmt) {
+fn interp_label<'a>(props: &mut Props<'a>, diagnostic: &Diagnostic, stmt: &'a Stmt) {
     match stmt.node {
         DeclareLabel(ref id) => {
             if props.labels.contains_key(id.as_str()) {
-                println!("WARN: label {:?} already exists, overriding", id);
+                diagnostic.warn(stmt.span, format!("label {:?} is already declared", id));
             }
 
             props.labels.insert(id, PROGRAM_START as u16 + props.pc - 2);
@@ -66,15 +69,12 @@ fn interp_label<'a>(props: &mut Props<'a>, stmt: &'a Stmt) {
     }
 }
 
-fn interp_stmt<'a>(props: &mut Props<'a>, stmt: &'a Stmt) {
+fn interp_stmt<'a>(props: &mut Props<'a>, diagnostic: &Diagnostic, stmt: &'a Stmt) {
     match stmt.node {
         DeclareLabel(_) => {}
         DeclareSprite(ref id, ref data) => {
             if props.sprites.contains_key(id.as_str()) {
-                println!(
-                    "WARN: sprite {:?} already exists, overriding at line {}",
-                    id, props.line
-                );
+                diagnostic.warn(stmt.span, format!("sprite {:?} is already declared", id));
             }
 
             let sprite_location = PROGRAM_START + props.code_size + props.sprite_data.len();
@@ -98,10 +98,7 @@ fn interp_stmt<'a>(props: &mut Props<'a>, stmt: &'a Stmt) {
         }
         JumpLabel(ref id) => {
             if !props.labels.contains_key(id.as_str()) {
-                panic!(
-                    "ERROR: could not find label {:?} at line {}",
-                    id, props.line
-                );
+                diagnostic.error(stmt.span, format!("label {:?} is not declared", id));
             }
 
             let pc = props.labels.get(id.as_str()).unwrap();
@@ -116,10 +113,7 @@ fn interp_stmt<'a>(props: &mut Props<'a>, stmt: &'a Stmt) {
         }
         CallLabel(ref id) => {
             if !props.labels.contains_key(id.as_str()) {
-                panic!(
-                    "ERROR: could not find label {:?} at line {}",
-                    id, props.line
-                );
+                diagnostic.error(stmt.span, format!("label {:?} is not declared", id));
             }
 
             let pc = props.labels.get(id.as_str()).unwrap();
@@ -209,10 +203,7 @@ fn interp_stmt<'a>(props: &mut Props<'a>, stmt: &'a Stmt) {
         }
         MoveIRegisterSprite(ref id) => {
             if !props.sprites.contains_key(id.as_str()) {
-                panic!(
-                    "ERROR: could not find sprite {:?} at line {}",
-                    id, props.line
-                );
+                diagnostic.error(stmt.span, format!("sprite {:?} is not declared", id));
             }
 
             let pc = props.sprites.get(id.as_str()).unwrap();

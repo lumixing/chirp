@@ -49,6 +49,7 @@ pub enum Stmt_ {
     Load(u8),
 }
 
+#[derive(Debug)]
 pub struct Stmt {
     pub span: Span,
     pub node: Stmt_,

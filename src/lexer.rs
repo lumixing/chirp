@@ -1,5 +1,6 @@
 use plex::lexer;
 
+#[rustfmt::skip]
 #[derive(Debug)]
 pub enum Token {
     Whitespace,
@@ -9,32 +10,15 @@ pub enum Token {
     Colon,
     Dollar,
 
-    Nop,
-    Cls,
-    Ret,
-    Jmp,
-    Call,
-    Se,
-    Sne,
-    Mov,
-    Add,
-    Or,
-    And,
-    Xor,
-    Sub,
-    Shr,
-    Subn,
-    Shl,
-    Jmpr,
-    Rnd,
-    Drw,
-    Skp,
-    Sknp,
-    Wait,
-    Spr,
-    Bcd,
-    Save,
-    Load,
+    Nop, Cls,
+    Ret, Jmp, Call,
+    Se, Sne, Mov,
+    Add, Or, And,
+    Xor, Sub, Shr,
+    Subn, Shl, Jmpr,
+    Rnd, Drw, Skp,
+    Sknp, Wait, Spr,
+    Bcd, Save, Load,
 
     Register(u8),
     Int8(u8),
@@ -155,6 +139,7 @@ impl<'a> Iterator for Lexer<'a> {
                 let lo = self.original.len() - self.remaining.len();
                 let hi = self.original.len() - new_remaining.len();
                 self.remaining = new_remaining;
+                // println!("{:?}\n{}..{}\n", tok, lo, hi);
                 (tok, Span { lo, hi })
             } else {
                 return None;
