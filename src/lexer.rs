@@ -83,7 +83,7 @@ lexer! {
         }
     },
 
-    r#"0x[0-9a-f]+"# => {
+    r#"0x[0-9a-fA-F]+"# => {
         let int = u16::from_str_radix(tok.trim_start_matches("0x"), 16)
             .expect("could not parse hex");
 
